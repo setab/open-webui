@@ -257,6 +257,7 @@ class ProcessUrlForm(CollectionNameForm):
 
 class SearchForm(BaseModel):
     queries: List[str]
+    engine: Optional[str] = None
 
 
 @router.get('/')
@@ -2175,6 +2176,42 @@ def search_web(request: Request, engine: str, query: str, user=None) -> list[Sea
         raise Exception('No search engine API key found in environment variables')
 
 
+@router.get('/web/search/engines')
+async def get_web_search_engines(request: Request, user=Depends(get_verified_user)):
+    """Return all supported search engines with their availability status."""
+    engines = [
+        {'id': 'ollama_cloud', 'name': 'Ollama Cloud', 'configured': bool(request.app.state.config.OLLAMA_CLOUD_WEB_SEARCH_API_KEY)},
+        {'id': 'perplexity_search', 'name': 'Perplexity Search', 'configured': bool(request.app.state.config.PERPLEXITY_API_KEY)},
+        {'id': 'searxng', 'name': 'SearXNG', 'configured': bool(request.app.state.config.SEARXNG_QUERY_URL)},
+        {'id': 'yacy', 'name': 'YaCy', 'configured': bool(request.app.state.config.YACY_QUERY_URL)},
+        {'id': 'google_pse', 'name': 'Google PSE', 'configured': bool(request.app.state.config.GOOGLE_PSE_API_KEY and request.app.state.config.GOOGLE_PSE_ENGINE_ID)},
+        {'id': 'brave', 'name': 'Brave', 'configured': bool(request.app.state.config.BRAVE_SEARCH_API_KEY)},
+        {'id': 'kagi', 'name': 'Kagi', 'configured': bool(request.app.state.config.KAGI_SEARCH_API_KEY)},
+        {'id': 'mojeek', 'name': 'Mojeek', 'configured': bool(request.app.state.config.MOJEEK_SEARCH_API_KEY)},
+        {'id': 'bocha', 'name': 'Bocha', 'configured': bool(request.app.state.config.BOCHA_SEARCH_API_KEY)},
+        {'id': 'serpstack', 'name': 'Serpstack', 'configured': bool(request.app.state.config.SERPSTACK_API_KEY)},
+        {'id': 'serper', 'name': 'Serper', 'configured': bool(request.app.state.config.SERPER_API_KEY)},
+        {'id': 'serply', 'name': 'Serply', 'configured': bool(request.app.state.config.SERPLY_API_KEY)},
+        {'id': 'searchapi', 'name': 'SearchApi', 'configured': bool(request.app.state.config.SEARCHAPI_API_KEY)},
+        {'id': 'serpapi', 'name': 'SerpApi', 'configured': bool(request.app.state.config.SERPAPI_API_KEY)},
+        {'id': 'duckduckgo', 'name': 'DuckDuckGo', 'configured': True},
+        {'id': 'tavily', 'name': 'Tavily', 'configured': bool(request.app.state.config.TAVILY_API_KEY)},
+        {'id': 'jina', 'name': 'Jina', 'configured': bool(request.app.state.config.JINA_API_KEY)},
+        {'id': 'bing', 'name': 'Bing', 'configured': bool(request.app.state.config.BING_SEARCH_V7_SUBSCRIPTION_KEY)},
+        {'id': 'exa', 'name': 'Exa', 'configured': bool(request.app.state.config.EXA_API_KEY)},
+        {'id': 'perplexity', 'name': 'Perplexity', 'configured': bool(request.app.state.config.PERPLEXITY_API_KEY)},
+        {'id': 'sougou', 'name': 'Sougou', 'configured': bool(request.app.state.config.SOUGOU_API_SID and request.app.state.config.SOUGOU_API_SK)},
+        {'id': 'firecrawl', 'name': 'Firecrawl', 'configured': bool(request.app.state.config.FIRECRAWL_API_KEY)},
+        {'id': 'external', 'name': 'External', 'configured': bool(request.app.state.config.EXTERNAL_WEB_SEARCH_URL)},
+        {'id': 'yandex', 'name': 'Yandex', 'configured': bool(request.app.state.config.YANDEX_WEB_SEARCH_URL and request.app.state.config.YANDEX_WEB_SEARCH_API_KEY)},
+        {'id': 'youcom', 'name': 'You.com', 'configured': bool(request.app.state.config.YOUCOM_API_KEY)},
+    ]
+    return {
+        'engines': engines,
+        'default': request.app.state.config.WEB_SEARCH_ENGINE,
+    }
+
+
 @router.post('/process/web/search')
 async def process_web_search(request: Request, form_data: SearchForm, user=Depends(get_verified_user)):
     if not request.app.state.config.ENABLE_WEB_SEARCH:
@@ -2195,7 +2232,10 @@ async def process_web_search(request: Request, form_data: SearchForm, user=Depen
     result_items = []
 
     try:
-        logging.debug(f'trying to web search with {request.app.state.config.WEB_SEARCH_ENGINE, form_data.queries}')
+        # Use engine from request if provided, otherwise fall back to admin config
+        search_engine = form_data.engine or request.app.state.config.WEB_SEARCH_ENGINE
+
+        logging.debug(f'trying to web search with {search_engine, form_data.queries}')
 
         # Use semaphore to limit concurrent requests based on WEB_SEARCH_CONCURRENT_REQUESTS
         # 0 or None = unlimited (previous behavior), positive number = limited concurrency
@@ -2211,7 +2251,7 @@ async def process_web_search(request: Request, form_data: SearchForm, user=Depen
                     return await run_in_threadpool(
                         search_web,
                         request,
-                        request.app.state.config.WEB_SEARCH_ENGINE,
+                        search_engine,
                         query,
                         user,
                     )
@@ -2223,7 +2263,7 @@ async def process_web_search(request: Request, form_data: SearchForm, user=Depen
                 run_in_threadpool(
                     search_web,
                     request,
-                    request.app.state.config.WEB_SEARCH_ENGINE,
+                    search_engine,
                     query,
                     user,
                 )

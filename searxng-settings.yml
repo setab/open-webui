@@ -1,0 +1,35 @@
+use_default_settings: true
+
+server:
+  secret_key: "CHANGE_ME_GENERATE_A_RANDOM_SECRET"
+  limiter: false
+  image_proxy: true
+  method: "GET"
+  http_protocol_version: "1.0"
+
+search:
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true
+
+enabled_plugins: []
+
+engines:
+  - name: duckduckgo
+    disabled: false
+    shortcut: ddg
+    
+  - name: google
+    disabled: true
+    
+  - name: bing
+    disabled: true
+    
+  - name: wikipedia
+    disabled: false
+    
+  - name: wikidata
+    disabled: true

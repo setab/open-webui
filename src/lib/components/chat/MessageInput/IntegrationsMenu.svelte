@@ -15,6 +15,7 @@
 	import { getOAuthClientAuthorizationUrl } from '$lib/apis/configs';
 	import { deleteOAuthSession } from '$lib/apis/auths';
 	import { getTools } from '$lib/apis/tools';
+	import { getWebSearchEngines } from '$lib/apis/retrieval';
 
 	import { toast } from 'svelte-sonner';
 
@@ -45,6 +46,7 @@
 
 	export let showWebSearchButton = false;
 	export let webSearchEnabled = false;
+	export let webSearchEngine = '';
 	export let showImageGenerationButton = false;
 	export let imageGenerationEnabled = false;
 	export let showCodeInterpreterButton = false;
@@ -54,6 +56,10 @@
 	export let onClose: Function;
 	export let closeOnOutsideClick = true;
 
+	let webSearchEngines: { id: string; name: string; configured: boolean }[] = [];
+	let defaultEngine = '';
+	let enginesLoaded = false;
+
 	let show = false;
 	let tab = '';
 
@@ -62,6 +68,23 @@
 	$: if (show) {
 		init();
 	}
+
+	$: if (webSearchEnabled && !enginesLoaded) {
+		loadEngines();
+	}
+
+	const loadEngines = async () => {
+		try {
+			const result = await getWebSearchEngines(localStorage.token);
+			if (result) {
+				webSearchEngines = result.engines;
+				defaultEngine = result.default;
+				enginesLoaded = true;
+			}
+		} catch (e) {
+			console.error('Failed to load search engines', e);
+		}
+	};
 
 	let fileUploadEnabled = true;
 	$: fileUploadEnabled =
@@ -247,6 +270,54 @@
 								</div>
 							</button>
 						</Tooltip>
+
+						{#if webSearchEnabled}
+							<div class="ml-6 mr-2 mb-1 max-h-32 overflow-y-auto scrollbar-thin">
+								{#if !enginesLoaded}
+									<div class="flex items-center justify-center py-2">
+										<Spinner className="size-3" />
+									</div>
+								{:else}
+									{#each webSearchEngines as engine}
+										<button
+											class="flex w-full justify-between gap-2 items-center px-3 py-1 text-xs cursor-pointer rounded-lg {engine.configured ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50' : 'opacity-40 cursor-not-allowed'}"
+											on:click={() => {
+												if (engine.configured) {
+													webSearchEngine = webSearchEngine === engine.id ? '' : engine.id;
+												}
+											}}
+											disabled={!engine.configured}
+										>
+											<div class="flex items-center gap-2 truncate">
+												<div
+													class="size-2 rounded-full shrink-0 {webSearchEngine === engine.id
+														? 'bg-green-500'
+														: engine.id === defaultEngine && !webSearchEngine
+															? 'bg-blue-500'
+															: engine.configured
+																? 'bg-gray-300 dark:bg-gray-600'
+																: 'bg-red-300 dark:bg-red-800'}"
+												/>
+												<span class="truncate">{engine.name}</span>
+											</div>
+											{#if webSearchEngine === engine.id}
+												<span class="text-[10px] text-green-600 dark:text-green-400 shrink-0"
+													>{$i18n.t('Active')}</span
+												>
+											{:else if engine.id === defaultEngine && !webSearchEngine}
+												<span class="text-[10px] text-blue-600 dark:text-blue-400 shrink-0"
+													>{$i18n.t('Default')}</span
+												>
+											{:else if !engine.configured}
+												<span class="text-[10px] text-gray-400 dark:text-gray-500 shrink-0"
+													>Not configured</span
+												>
+											{/if}
+										</button>
+									{/each}
+								{/if}
+							</div>
+						{/if}
 					{/if}
 
 					{#if showImageGenerationButton}

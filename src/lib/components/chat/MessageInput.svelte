@@ -135,6 +135,7 @@
 
 	export let imageGenerationEnabled = false;
 	export let webSearchEnabled = false;
+	export let webSearchEngine = '';
 	export let codeInterpreterEnabled = false;
 
 	export let pendingOAuthTools = [];
@@ -179,6 +180,7 @@
 		selectedFilterIds,
 		imageGenerationEnabled,
 		webSearchEnabled,
+		webSearchEngine,
 		codeInterpreterEnabled
 	});
 
@@ -1682,6 +1684,7 @@
 											bind:selectedToolIds
 											bind:selectedFilterIds
 											bind:webSearchEnabled
+											bind:webSearchEngine
 											bind:imageGenerationEnabled
 											bind:codeInterpreterEnabled
 											closeOnOutsideClick={integrationsMenuCloseOnOutsideClick}

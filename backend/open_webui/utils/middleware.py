@@ -1587,9 +1587,11 @@ async def chat_web_search_handler(request: Request, form_data: dict, extra_param
     )
 
     try:
+        # Pass user-selected engine override if provided in features
+        engine_override = extra_params.get('__features__', {}).get('web_search_engine')
         results = await process_web_search(
             request,
-            SearchForm(queries=queries),
+            SearchForm(queries=queries, engine=engine_override if engine_override else None),
             user=user,
         )
 

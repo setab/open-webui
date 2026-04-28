@@ -8,21 +8,35 @@ services:
     restart: unless-stopped
     image: ollama/ollama:${OLLAMA_DOCKER_TAG-latest}
 
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    volumes:
+      - ./searxng-settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-CHANGE_ME_GENERATE_A_RANDOM_SECRET}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
   open-webui:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}
     container_name: open-webui
     volumes:
       - open-webui:/app/backend/data
     depends_on:
       - ollama
+      - searxng
     ports:
       - ${OPEN_WEBUI_PORT-3000}:8080
     environment:
       - 'OLLAMA_BASE_URL=http://ollama:11434'
       - 'WEBUI_SECRET_KEY='
+      - 'ENABLE_WEB_SEARCH=True'
+      - 'WEB_SEARCH_ENGINE=searxng'
+      - 'SEARXNG_QUERY_URL=http://searxng:8080/search'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped

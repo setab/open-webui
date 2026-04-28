@@ -150,6 +150,7 @@
 
 	let imageGenerationEnabled = false;
 	let webSearchEnabled = false;
+	let webSearchEngine = '';
 	let codeInterpreterEnabled = false;
 
 	let showCommands = false;
@@ -196,6 +197,7 @@
 		selectedToolIds = [];
 		selectedFilterIds = [];
 		webSearchEnabled = false;
+		webSearchEngine = '';
 		imageGenerationEnabled = false;
 
 		const storageChatInput = sessionStorage.getItem(
@@ -231,6 +233,7 @@
 						selectedToolIds = input.selectedToolIds;
 						selectedFilterIds = input.selectedFilterIds;
 						webSearchEnabled = input.webSearchEnabled;
+						webSearchEngine = input.webSearchEngine ?? '';
 						imageGenerationEnabled = input.imageGenerationEnabled;
 						codeInterpreterEnabled = input.codeInterpreterEnabled;
 					}
@@ -292,6 +295,7 @@
 		selectedFilterIds = [];
 		pendingOAuthTools = [];
 		webSearchEnabled = false;
+		webSearchEngine = '';
 		imageGenerationEnabled = false;
 		codeInterpreterEnabled = false;
 
@@ -782,6 +786,7 @@
 				selectedToolIds = [];
 				selectedFilterIds = [];
 				webSearchEnabled = false;
+				webSearchEngine = '';
 				imageGenerationEnabled = false;
 				codeInterpreterEnabled = false;
 
@@ -794,6 +799,7 @@
 						selectedToolIds = input.selectedToolIds;
 						selectedFilterIds = input.selectedFilterIds;
 						webSearchEnabled = input.webSearchEnabled;
+						webSearchEngine = input.webSearchEngine ?? '';
 						imageGenerationEnabled = input.imageGenerationEnabled;
 						codeInterpreterEnabled = input.codeInterpreterEnabled;
 					}
@@ -2110,7 +2116,14 @@
 					$config?.features?.enable_web_search &&
 					($user?.role === 'admin' || $user?.permissions?.features?.web_search)
 						? webSearchEnabled
-						: false
+						: false,
+				web_search_engine:
+					$config?.features?.enable_web_search &&
+					($user?.role === 'admin' || $user?.permissions?.features?.web_search) &&
+					webSearchEnabled &&
+					webSearchEngine
+						? webSearchEngine
+						: undefined
 			};
 
 		const currentModels = atSelectedModel?.id ? [atSelectedModel.id] : selectedModels;
@@ -2953,6 +2966,7 @@
 									bind:codeInterpreterEnabled
 									{pendingOAuthTools}
 									bind:webSearchEnabled
+									bind:webSearchEngine
 									bind:atSelectedModel
 									bind:showCommands
 									bind:dragged
@@ -3033,6 +3047,7 @@
 									bind:imageGenerationEnabled
 									bind:codeInterpreterEnabled
 									bind:webSearchEnabled
+									bind:webSearchEngine
 									bind:atSelectedModel
 									bind:showCommands
 									bind:dragged
